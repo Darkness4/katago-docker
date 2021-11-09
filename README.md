@@ -34,10 +34,6 @@ It may also work with other version of KataGo (OpenCL, CUDA, Eigen), but you wil
    docker run --rm --gpus all -i \
      -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
      -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
-     --device /dev/nvidia0 \
-     --device /dev/nvidia-uvm \
-     --device /dev/nvidia-uvm-tools \
-     --device /dev/nvidiactl \
      katago:tensorrt \
      $@
 
@@ -85,10 +81,6 @@ It may also work with other version of KataGo (OpenCL, CUDA, Eigen), but you wil
    docker run --rm --gpus all -i \
      -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
      -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
-     --device /dev/nvidia0 \
-     --device /dev/nvidia-uvm \
-     --device /dev/nvidia-uvm-tools \
-     --device /dev/nvidiactl \
      katago:tensorrt \
      $@
 
