@@ -16,39 +16,39 @@ It may also work with other version of KataGo (OpenCL, CUDA, Eigen), but you wil
 
 4. Build the docker image or use `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea` :
 
-```sh
-docker build \
-  --build-arg os="ubuntu2004" \
-  --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
-  -t katago:tensorrt \
-  .
-```
+   ```sh
+   docker build \
+     --build-arg os="ubuntu2004" \
+     --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
+     -t katago:tensorrt \
+     .
+   ```
 
 5. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`.
 6. Create an executable (shell script) to run katago :
 
-```sh
-#!/bin/sh
-# katago.sh
+   ```sh
+   #!/bin/sh
+   # katago.sh
 
-docker run --rm --gpus all -i \
-  -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
-  -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
-  --device /dev/nvidia0 \
-  --device /dev/nvidia-uvm \
-  --device /dev/nvidia-uvm-tools \
-  --device /dev/nvidiactl \
-  katago:tensorrt \
-  $@
+   docker run --rm --gpus all -i \
+     -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
+     -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
+     --device /dev/nvidia0 \
+     --device /dev/nvidia-uvm \
+     --device /dev/nvidia-uvm-tools \
+     --device /dev/nvidiactl \
+     katago:tensorrt \
+     $@
 
-```
+   ```
 
 7. Use `katago.sh` as the main entrypoint.
 
-```sh
-chmod +x katago.sh
-./katago.sh --help
-```
+   ```sh
+   chmod +x katago.sh
+   ./katago.sh --help
+   ```
 
 ## Run KataGo remotely with Docker and SSH
 
@@ -66,58 +66,58 @@ chmod +x katago.sh
 
 5. Build the docker image or use `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea` :
 
-```sh
-docker build \
-  --build-arg os="ubuntu2004" \
-  --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
-  -t katago:tensorrt \
-  .
-```
+   ```sh
+   docker build \
+     --build-arg os="ubuntu2004" \
+     --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
+     -t katago:tensorrt \
+     .
+   ```
 
-6. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`. 
+6. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`.
 
 7. Create an executable (shell script) to run katago :
 
-```sh
-#!/bin/sh
-# /home/remote-user/katago.sh
+   ```sh
+   #!/bin/sh
+   # /home/remote-user/katago.sh
 
-docker run --rm --gpus all -i \
-  -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
-  -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
-  --device /dev/nvidia0 \
-  --device /dev/nvidia-uvm \
-  --device /dev/nvidia-uvm-tools \
-  --device /dev/nvidiactl \
-  katago:tensorrt \
-  $@
+   docker run --rm --gpus all -i \
+     -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
+     -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
+     --device /dev/nvidia0 \
+     --device /dev/nvidia-uvm \
+     --device /dev/nvidia-uvm-tools \
+     --device /dev/nvidiactl \
+     katago:tensorrt \
+     $@
 
-```
+   ```
 
 8. Make it executable and test it.
 
-```sh
-chmod +x katago.sh
-./katago.sh --help
-```
+   ```sh
+   chmod +x katago.sh
+   ./katago.sh --help
+   ```
 
 **On your local machine:**
 
 1. Create an executable
 
-```sh
-#!/bin/sh
-# katago-remote.sh
+   ```sh
+   #!/bin/sh
+   # katago-remote.sh
 
-ssh remote-user@remote-machine /home/remote-user/katago.sh $@
-```
+   ssh remote-user@remote-machine /home/remote-user/katago.sh $@
+   ```
 
 2. Make it executable and test it.
 
-```sh
-chmod +x katago-remote.sh
-./katago-remote.sh --help
-```
+   ```sh
+   chmod +x katago-remote.sh
+   ./katago-remote.sh --help
+   ```
 
 ## Run KataGo on Slurm+Pyxis
 
@@ -153,41 +153,63 @@ Skip this part if you perfer to use the Docker image `darkness4/katago:cuda11.4.
 2. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`. You have also to put the `default_gtp.cfg`.
 3. Create an executable (shell script) to run katago in a slurm job:
 
-```sh
-#!/bin/sh
-# /home/remote-user/katago.sh
+   ```sh
+   #!/bin/sh
+   # /home/remote-user/katago.sh
 
-srun --gpus --pty \
-	--container-image=user/katago:tensorrt \
-	--container-mounts="$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro,$(pwd)/default_model.bin.gz:/app/default_model.bin.gz:ro" \
-	/app/katago $@
+   set -ex
 
-```
+   if [ ! -f "$(pwd)/katago.sqsh" ]; then
+     srun --ntasks=1 \
+       --container-image=user/katago:tensorrt \
+       --container-save="$(pwd)/katago.sqsh" \
+       true
+   fi
+
+   tries=1; while [ "$tries" -lt 10 ]; do
+     if file "$(pwd)/katago.sqsh" | grep -q "Squashfs  filesystem"; then
+       break
+     fi
+     echo "Image is not complete. Wait a few seconds... ($tries/ 10)"
+     sleep 10
+     tries=$((tries+1))
+   done
+   if [ "$tries" -ge 10 ]; then
+     echo "Image import failure. Please try again."
+     exit 1
+   fi
+
+   srun --gpus=1 \
+     --container-image="$(pwd)/katago.sqsh" \
+     --container-mounts="$(pwd)/default_gtp.cfg:/app/default_gtp. cfg:ro,$(pwd)/default_model.bin.gz:/app/default_model.bin. gz:ro" \
+     /app/katago $@
+
+   ```
 
 4. Make it executable and test it.
 
-```sh
-chmod +x katago.sh
-./katago.sh --help
-```
+   ```sh
+   chmod +x katago.sh
+   ./katago.sh --help
+   ```
 
 **On your local machine:**
 
 1. Create an executable
 
-```sh
-#!/bin/sh
-# katago-remote.sh
+   ```sh
+   #!/bin/sh
+   # katago-remote.sh
 
-ssh remote-user@remote-machine /home/remote-user/katago.sh $@
-```
+   ssh remote-user@remote-machine /home/remote-user/katago.sh $@
+   ```
 
 2. Make it executable and test it.
 
-```sh
-chmod +x katago-remote.sh
-./katago-remote.sh --help
-```
+   ```sh
+   chmod +x katago-remote.sh
+   ./katago-remote.sh --help
+   ```
 
 # Why not use nvcr.io/nvidia/tensorrt ?
 
