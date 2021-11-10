@@ -1,36 +1,43 @@
-ARG os="ubuntu2004"
-ARG tag="cuda11.4-trt8.2.0.6-ea-20210922"
+ARG CUDA_VERSION=11.4.2
+ARG OS_VERSION=20.04
+ARG TRT_VERSION=8.2.0.6
 
 # ---------------------------------------------------------------------------
-FROM nvcr.io/nvidia/cuda:11.4.2-cudnn8-runtime-ubuntu20.04 as tensorrt-runner
+FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-runtime-ubuntu${OS_VERSION} as tensorrt-runner
 # ---------------------------------------------------------------------------
 
-ARG os
-ARG tag
+ARG TRT_VERSION
+ARG CUDA_VERSION
 
 ENV DEBIAN_FRONTEND noninteractive
 
-COPY ./nv-tensorrt-repo-${os}-${tag}_1-1_amd64.deb ./nv-tensorrt-repo-${os}-${tag}_1-1_amd64.deb
-RUN dpkg -i ./nv-tensorrt-repo-${os}-${tag}_1-1_amd64.deb
-RUN apt-key add /var/nv-tensorrt-repo-${os}-${tag}/7fa2af80.pub \
-  && apt update -y \
-  && apt install --no-install-recommends -y libnvinfer-bin libnvinfer8 libnvparsers8 libnvonnxparsers8 libnvinfer-plugin8 zlib1g-dev libzip-dev \
+RUN v="${TRT_VERSION%.*}-1+cuda${CUDA_VERSION%.*}" \
+  && apt update -y && apt install -y \
+  libnvinfer8=${v} \
+  libnvonnxparsers8=${v} \
+  libnvparsers8=${v} \
+  libnvinfer-plugin8=${v} \
   && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------
-FROM nvcr.io/nvidia/cuda:11.4.2-cudnn8-devel-ubuntu20.04 as builder
+FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-devel-ubuntu${OS_VERSION} as builder
 # -----------------------------------------------------------------
 
-ARG os
-ARG tag
+ARG TRT_VERSION
+ARG CUDA_VERSION
 
 ENV DEBIAN_FRONTEND noninteractive
 
-COPY ./nv-tensorrt-repo-${os}-${tag}_1-1_amd64.deb ./nv-tensorrt-repo-${os}-${tag}_1-1_amd64.deb
-RUN dpkg -i ./nv-tensorrt-repo-${os}-${tag}_1-1_amd64.deb
-RUN apt-key add /var/nv-tensorrt-repo-${os}-${tag}/7fa2af80.pub \
-  && apt update -y \
-  && apt install -y git build-essential wget tensorrt zlib1g-dev libzip-dev \
+RUN v="${TRT_VERSION%.*}-1+cuda${CUDA_VERSION%.*}" \
+  && apt update -y && apt install -y \
+  libnvinfer-dev=${v} \
+  libnvonnxparsers-dev=${v} \
+  libnvparsers-dev=${v} \
+  libnvinfer-plugin-dev=${v} \
+  wget \
+  git \
+  zlib1g-dev \
+  libzip-dev \
   && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.0-rc2/cmake-3.22.0-rc2-linux-x86_64.sh \
@@ -52,6 +59,11 @@ RUN make -j$(nproc)
 # ------------------
 FROM tensorrt-runner
 # ------------------
+
+RUN apt update -y && apt install --no-install-recommends -y \
+  zlib1g-dev \
+  libzip-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

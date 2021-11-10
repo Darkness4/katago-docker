@@ -10,35 +10,27 @@ It may also work with other version of KataGo (OpenCL, CUDA, Eigen), but you wil
 
 2. Clone the repository.
 
-3. Download [TensorRT 8.2](https://developer.nvidia.com/tensorrt-getting-started) from NVIDIA and put it in the folder.
-
-   For example `nv-tensorrt-repo-ubuntu2004-cuda11.4-trt8.2.0.6-ea-20210922_1-1_amd64.deb`.
-
 4. Build the docker image or use `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea` :
 
    ```sh
-   docker build \
-     --build-arg os="ubuntu2004" \
-     --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
-     -t katago:tensorrt \
-     .
+   docker build -t katago:tensorrt .
    ```
-
+   
 5. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`.
 6. Create an executable (shell script) to run katago :
 
    ```sh
    #!/bin/sh
    # katago.sh
-
+   
    docker run --rm --gpus all -i \
      -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
      -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
      katago:tensorrt \
      $@
-
+   
    ```
-
+   
 7. Use `katago.sh` as the main entrypoint.
 
    ```sh
@@ -56,20 +48,12 @@ It may also work with other version of KataGo (OpenCL, CUDA, Eigen), but you wil
 
 3. Clone the repository.
 
-4. Download [TensorRT 8.2](https://developer.nvidia.com/tensorrt-getting-started) from NVIDIA and put it in the folder next to the Dockerfile.
-
-   For example `nv-tensorrt-repo-ubuntu2004-cuda11.4-trt8.2.0.6-ea-20210922_1-1_amd64.deb`.
-
 5. Build the docker image or use `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea` :
 
    ```sh
-   docker build \
-     --build-arg os="ubuntu2004" \
-     --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
-     -t katago:tensorrt \
-     .
+   docker build -t katago:tensorrt .
    ```
-
+   
 6. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`.
 
 7. Create an executable (shell script) to run katago :
@@ -119,20 +103,12 @@ Skip this part if you perfer to use the Docker image `darkness4/katago:cuda11.4.
 
 1. Clone the repository.
 
-2. Download [TensorRT 8.2](https://developer.nvidia.com/tensorrt-getting-started) from NVIDIA and put it in the folder next to the Dockerfile.
-
-   For example `nv-tensorrt-repo-ubuntu2004-cuda11.4-trt8.2.0.6-ea-20210922_1-1_amd64.deb`.
-
-3. Build the docker image :
+3. Build the docker image:
 
    ```sh
-   docker build \
-     --build-arg os="ubuntu2004" \
-     --build-arg tag="cuda11.4-trt8.2.0.6-ea-20210922" \
-     -t user/katago:tensorrt \
-     .
+   docker build -t user/katago:tensorrt .
    ```
-
+   
 4. Push in a registry:
 
    ```sh
@@ -203,8 +179,3 @@ Skip this part if you perfer to use the Docker image `darkness4/katago:cuda11.4.
    ./katago-remote.sh --help
    ```
 
-# Why not use nvcr.io/nvidia/tensorrt ?
-
-Because TensorRT 8.2 is not available in an official NVIDIA image at the moment I'm writing this.
-
-If it's out, please feel free to use `Dockerfile.future`.
