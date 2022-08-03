@@ -11,7 +11,7 @@ ARG CUDA_VERSION
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN v="${TRT_VERSION%.*}-1+cuda${CUDA_VERSION%.*}" \
+RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
   && apt update -y && apt install -y \
   libnvinfer8=${v} \
   libnvonnxparsers8=${v} \
@@ -28,7 +28,7 @@ ARG CUDA_VERSION
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN v="${TRT_VERSION%.*}-1+cuda${CUDA_VERSION%.*}" \
+RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
   && apt update -y && apt install -y \
   libnvinfer-dev=${v} \
   libnvonnxparsers-dev=${v} \
