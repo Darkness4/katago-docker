@@ -1,6 +1,6 @@
-ARG CUDA_VERSION=11.4.2
+ARG CUDA_VERSION=11.6.2
 ARG OS_VERSION=20.04
-ARG TRT_VERSION=8.2.0.6
+ARG TRT_VERSION=8.4.2
 
 # ---------------------------------------------------------------------------
 FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-runtime-ubuntu${OS_VERSION} as tensorrt-runner
@@ -40,7 +40,7 @@ RUN v="${TRT_VERSION%.*}-1+cuda${CUDA_VERSION%.*}" \
   libzip-dev \
   && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.22.0-rc2/cmake-3.22.0-rc2-linux-x86_64.sh \
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.24.0-rc5/cmake-3.24.0-rc5-linux-x86_64.sh \
   -q -O /tmp/cmake-install.sh \
   && chmod u+x /tmp/cmake-install.sh \
   && apt remove --purge -y cmake \
