@@ -25,8 +25,8 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          push: true
-          tags: darkness4/katago:test
+          push: false
+          tags: localhost/darkness4/katago:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
