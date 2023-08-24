@@ -1,181 +1,178 @@
-# KataGo Docker / Remote / Slurm+Pyxis
+# KataGo Docker
 
 This guide is meant to run KataGo with TensorRT in a container.
 
 It may also work with other version of KataGo (OpenCL, CUDA, Eigen), but you will have to edit the Dockerfile.
 
-## Run KataGo in a Docker container
+## Build KataGo in a Docker container
 
-1. Install Docker. If you are using NVIDIA, you have to install the [NVIDIA Container Runtime](https://nvidia.github.io/nvidia-container-runtime/).
+1. Clone the repository.
 
-2. Clone the repository.
-
-4. Build the docker image or use `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea` :
+2. Build the docker image or use `darkness4/katago:latest` :
 
    ```sh
    docker build -t katago:tensorrt .
    ```
-   
-5. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`.
-6. Create an executable (shell script) to run katago :
+
+You can customize the Dockerfile by setting `--build-arg` parameters like `CUDA_VERSION`, `OS_VERSION` and `TRT_VERSION`. Note that `TRT_VERSION` must be available in the container.
+
+## Run KataGo in Docker
+
+1. Install Docker and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
+
+2. Create an executable shell script to run KataGo:
 
    ```sh
    #!/bin/sh
    # katago.sh
-   
-   docker run --rm --gpus all -i \
-     -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
-     -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
+
+   set -e
+
+   SCRIPTPATH="$(dirname "$(realpath "$0")")"
+
+   # Change this if you want to use an another model, see https://katagotraining.org
+   RELEASE=kata1-b18c384nbt-s7192213760-d3579182099
+
+   if [ ! -f "$SCRIPTPATH/default_model.bin.gz" ]; then
+      curl -fsSL https://media.katagotraining.org/uploaded/networks/models/kata1/$RELEASE.bin.gz -o "$SCRIPTPATH/default_model.bin.gz"
+   fi
+
+   docker run --rm --gpus all -it \
+     -v "$SCRIPTPATH/default_gtp.cfg:/app/default_gtp.cfg:ro" \
+     -v "$SCRIPTPATH/default_model.bin.gz:/app/default_model.bin.gz" \
      katago:tensorrt \
      $@
-   
+
    ```
-   
-7. Use `katago.sh` as the main entrypoint.
+
+3. Use `katago.sh` as the main entrypoint.
 
    ```sh
    chmod +x katago.sh
-   ./katago.sh --help
+   ./katago.sh gtp
+   # KataGo v1.13.2
+   # Using TrompTaylor rules initially, unless GTP/GUI overrides this
+   # Initializing board with boardXSize 19 boardYSize 19
+   # Loaded config /app/default_gtp.cfg
+   # Loaded model /app/default_model.bin.gz
+   # Model name: kata1-b18c384nbt-s5832081920-d3223508649
+   # GTP ready, beginning main protocol loop
    ```
 
 ## Run KataGo remotely with Docker and SSH
 
 **On the remote machine:**
 
-1. Install the SSH server and [push your ssh key to your user](https://www.ssh.com/academy/ssh/copy-id). The authentication must not use a password.
+1. Install the SSH server and [push your public SSH key to your user authorized_keys file](https://www.ssh.com/academy/ssh/copy-id). The authentication must not use a password.
 
-2. Install Docker in the remote machine. If you are using NVIDIA, you have to install the [NVIDIA Container Runtime](https://nvidia.github.io/nvidia-container-runtime/).
-
-3. Clone the repository.
-
-5. Build the docker image or use `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea` :
-
-   ```sh
-   docker build -t katago:tensorrt .
-   ```
-   
-6. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`.
-
-7. Create an executable (shell script) to run katago :
-
-   ```sh
-   #!/bin/sh
-   # /home/remote-user/katago.sh
-
-   docker run --rm --gpus all -i \
-     -v "$(pwd)/default_gtp.cfg:/app/default_gtp.cfg:ro" \
-     -v "$(pwd)/default_model.bin.gz:/app/default_model.bin.gz" \
-     katago:tensorrt \
-     $@
-
-   ```
-
-8. Make it executable and test it.
-
-   ```sh
-   chmod +x katago.sh
-   ./katago.sh --help
-   ```
+2. Install Docker and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 **On your local machine:**
 
-1. Create an executable
+1. Prepare the `default_gtp.cfg`.
+
+2. Alongside the `default_gtp.cfg`, create an executable shell script to run KataGo:
 
    ```sh
    #!/bin/sh
    # katago-remote.sh
 
-   ssh remote-user@remote-machine /home/remote-user/katago.sh $@
+   set -e
+
+   SCRIPTPATH="$(dirname "$(realpath "$0")")"
+
+   # Change this if you want to use an another model, see https://katagotraining.org
+   RELEASE=kata1-b18c384nbt-s7192213760-d3579182099
+
+   scp "$SCRIPTPATH/default_gtp.cfg" remote-user@remote-machine:/tmp/default_gtp.cfg
+
+   ssh remote-user@remote-machine "set -e
+   if [ ! -f /tmp/default_model.bin.gz ]; then
+      curl -fsSL https://media.katagotraining.org/uploaded/networks/models/kata1/$RELEASE.bin.gz -o /tmp/default_model.bin.gz
+   fi
+
+   docker run --rm -it \
+     --gpus all \
+     -v /tmp/default_gtp.cfg:/app/default_gtp.cfg:ro \
+     -v /tmp/default_model.bin.gz:/app/default_model.bin.gz:ro \
+     docker.io/darkness4/katago:latest \
+     $@"
+
    ```
 
-2. Make it executable and test it.
+   Edit the script to match your configuration (ssh parameters, etc.).
+
+3. Make it executable and test it.
 
    ```sh
    chmod +x katago-remote.sh
-   ./katago-remote.sh --help
+   ./katago-remote.sh gtp
+   # KataGo v1.13.2
+   # Using TrompTaylor rules initially, unless GTP/GUI overrides this
+   # Initializing board with boardXSize 19 boardYSize 19
+   # Loaded config /app/default_gtp.cfg
+   # Loaded model /app/default_model.bin.gz
+   # Model name: kata1-b18c384nbt-s5832081920-d3223508649
+   # GTP ready, beginning main protocol loop
    ```
 
-## Run KataGo on Slurm+Pyxis
-
-**On any machine:**
-
-Skip this part if you perfer to use the Docker image `darkness4/katago:cuda11.4.2-cudnn8-ubuntu20.04-trt8.2.0.6-ea`.
-
-1. Clone the repository.
-
-3. Build the docker image:
-
-   ```sh
-   docker build -t user/katago:tensorrt .
-   ```
-   
-4. Push in a registry:
-
-   ```sh
-   docker push user/katago:tensorrt
-   ```
+## Run KataGo remotely with Enroot and SSH
 
 **On the remote machine:**
 
-1. Install Slurm, Pyxis, Enroot, [NVIDIA Container Runtime](https://nvidia.github.io/nvidia-container-runtime/).
-2. Download a KataGo model from [KataGo Training](https://katagotraining.org) and name it `default_model.bin.gz`. You have also to put the `default_gtp.cfg`.
-3. Create an executable (shell script) to run katago in a slurm job:
+1. Install the SSH server and [push your public SSH key to your user authorized_keys file](https://www.ssh.com/academy/ssh/copy-id). The authentication must not use a password.
 
-   ```sh
-   #!/bin/sh
-   # /home/remote-user/katago.sh
-
-   set -ex
-
-   if [ ! -f "$(pwd)/katago.sqsh" ]; then
-     srun --ntasks=1 \
-       --container-image=user/katago:tensorrt \
-       --container-save="$(pwd)/katago.sqsh" \
-       true
-   fi
-
-   tries=1; while [ "$tries" -lt 10 ]; do
-     if file "$(pwd)/katago.sqsh" | grep -q "Squashfs  filesystem"; then
-       break
-     fi
-     echo "Image is not complete. Wait a few seconds... ($tries/ 10)"
-     sleep 10
-     tries=$((tries+1))
-   done
-   if [ "$tries" -ge 10 ]; then
-     echo "Image import failure. Please try again."
-     exit 1
-   fi
-
-   srun --gpus=1 \
-     --container-image="$(pwd)/katago.sqsh" \
-     --container-mounts="$(pwd)/default_gtp.cfg:/app/default_gtp. cfg:ro,$(pwd)/default_model.bin.gz:/app/default_model.bin. gz:ro" \
-     /app/katago $@
-
-   ```
-
-4. Make it executable and test it.
-
-   ```sh
-   chmod +x katago.sh
-   ./katago.sh --help
-   ```
+2. Install Enroot and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 
 **On your local machine:**
 
-1. Create an executable
+1. Prepare the `default_gtp.cfg`.
+
+2. Alongside the `default_gtp.cfg`, create an executable shell script to run KataGo with Enroot:
 
    ```sh
    #!/bin/sh
    # katago-remote.sh
 
-   ssh remote-user@remote-machine /home/remote-user/katago.sh $@
+   set -e
+
+   SCRIPTPATH="$(dirname "$(realpath "$0")")"
+
+   # Change this if you want to use an another model, see https://katagotraining.org
+   RELEASE=kata1-b18c384nbt-s7192213760-d3579182099
+
+   # Copy config file to remote server
+   scp "$SCRIPTPATH/default_gtp.cfg" remote-user@remote-machine:/tmp/default_gtp.cfg
+
+   ssh remote-user@remote-machine "set -e
+   rm -f /tmp/katago.sqsh
+   enroot remove -f -- katago || true
+   enroot import -o /tmp/katago.sqsh -- docker://registry-1.docker.io#darkness4/katago:latest
+   enroot create -n katago -- /tmp/katago.sqsh
+   if [ ! -f /tmp/default_model.bin.gz ]; then
+   curl -fsSL https://media.katagotraining.org/uploaded/networks/models/kata1/$RELEASE.bin.gz -o /tmp/default_model.bin.gz
+   fi
+
+   enroot start  \
+   --mount /tmp/default_gtp.cfg:/app/default_gtp.cfg:ro,x-create=file,bind \
+   --mount /tmp/default_model.bin.gz:/app/default_model.bin.gz:ro,x-create=file,bind \
+   katago \
+   $@"
+
    ```
 
-2. Make it executable and test it.
+   Edit the script to match your configuration (ssh parameters, etc.).
+
+3. Make it executable and test it.
 
    ```sh
    chmod +x katago-remote.sh
-   ./katago-remote.sh --help
+   ./katago-remote.sh gtp
+   # KataGo v1.13.2
+   # Using TrompTaylor rules initially, unless GTP/GUI overrides this
+   # Initializing board with boardXSize 19 boardYSize 19
+   # Loaded config /app/default_gtp.cfg
+   # Loaded model /app/default_model.bin.gz
+   # Model name: kata1-b18c384nbt-s5832081920-d3223508649
+   # GTP ready, beginning main protocol loop
    ```
-
