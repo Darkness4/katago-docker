@@ -1,6 +1,6 @@
 ARG CUDA_VERSION=12.0.1
 ARG OS_VERSION=22.04
-ARG TRT_VERSION=8.6.0.12
+ARG TRT_VERSION=8.6.1.6
 
 # ---------------------------------------------------------------------------
 FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-runtime-ubuntu${OS_VERSION} as tensorrt-runner
