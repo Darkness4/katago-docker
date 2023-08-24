@@ -1,9 +1,9 @@
-ARG CUDA_VERSION=11.8.0
-ARG OS_VERSION=20.04
-ARG TRT_VERSION=8.5.2
+ARG CUDA_VERSION=12.0.1
+ARG OS_VERSION=22.04
+ARG TRT_VERSION=8.6.0.12
 
 # ---------------------------------------------------------------------------
-FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-runtime-ubuntu${OS_VERSION} as tensorrt-runner
+FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-runtime-ubuntu${OS_VERSION} as tensorrt-runner
 # ---------------------------------------------------------------------------
 
 ARG TRT_VERSION
@@ -20,7 +20,7 @@ RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
   && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------
-FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-devel-ubuntu${OS_VERSION} as builder
+FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-devel-ubuntu${OS_VERSION} as builder
 # -----------------------------------------------------------------
 
 ARG TRT_VERSION
@@ -43,7 +43,6 @@ RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
 RUN wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh \
   -q -O /tmp/cmake-install.sh \
   && chmod u+x /tmp/cmake-install.sh \
-  && apt remove --purge -y cmake \
   && /tmp/cmake-install.sh --skip-license --prefix=/usr/local \
   && rm /tmp/cmake-install.sh
 
