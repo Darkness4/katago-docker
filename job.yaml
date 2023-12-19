@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=/home/marc/.cache/.job.schema.json
+## See: https://docs.deepsquare.run/workflow/workflow-api-reference/job
+
+## Allow DeepSquare logging
+enableLogging: true
+
+## Allocate resources
+resources:
+  tasks: 1
+  cpusPerTask: 1
+  memPerCpu: 8000
+  gpus: 1
+
+## The job content
+steps:
+  ## The steps of the jobs which are run sequentially.
+  - name: 'katago'
+    run:
+      container:
+        image: darkness4/katago:latest-ssh
+      network: slirp4netns
+      resources:
+        gpusPerTask: 1
+      customNetworkInterfaces:
+        - bore:
+            boreAddress: bore.deepsquare.run:2200
+            targetPort: 2200
+      command: |
+        mkdir -p "$HOME/.ssh"
+        echo "<pubkey>" >> "$HOME/.ssh/authorized_keys"
+        chmod 600 "$HOME/.ssh/authorized_keys"
+        chmod 700 "$HOME/.ssh"
+
+        ssh-keygen -A
+
+        echo $USER
+
+        /usr/sbin/sshd -D -p 2200
+
+#### Use a script to interact with it
+
+# #!/bin/sh
+# # katago-remote.sh
+#
+# set -e
+#
+# SCRIPTPATH="$(dirname "$(realpath "$0")")"
+#
+# # Copy config file to remote server
+# scp -P <port> "$SCRIPTPATH/default_gtp.cfg" <user>@bore.deepsquare.run:/tmp/default_gtp.cfg
+#
+# ssh -p <port> <user>@bore.deepsquare.run "set -e
+#
+# # Change this if you want to use an another model, see https://katagotraining.org
+# RELEASE=kata1-b18c384nbt-s8493331456-d3920571699
+#
+# if [ ! -f \$DEEPSQUARE_DISK_TMP/default_model.bin.gz ]; then
+#   curl -fsSL https://media.katagotraining.org/uploaded/networks/models/kata1/\$RELEASE.bin.gz -o \$DEEPSQUARE_DISK_TMP/default_model.bin.gz
+# fi
+#
+# /app/katago $@ -model \$DEEPSQUARE_DISK_TMP/default_model.bin.gz -config /tmp/default_gtp.cfg"

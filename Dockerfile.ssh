@@ -1,0 +1,9 @@
+# ------------------
+FROM darkness4/katago:latest
+# ------------------
+
+RUN apt update -y && apt install --no-install-recommends -y \
+  ssh curl wget \
+  && rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["/usr/sbin/sshd", "-D"]
