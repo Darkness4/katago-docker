@@ -1,9 +1,10 @@
-ARG CUDA_VERSION=12.0.1
+ARG CUDA_VERSION=12.4.1
 ARG OS_VERSION=22.04
-ARG TRT_VERSION=8.6.1.6
+ARG TRT_VERSION=10.0.1.6-1+cuda12.4
+ARG KATAGO_VERSION=v1.14.1
 
 # ---------------------------------------------------------------------------
-FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-runtime-ubuntu${OS_VERSION} as tensorrt-runner
+FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn-runtime-ubuntu${OS_VERSION} as tensorrt-runner
 # ---------------------------------------------------------------------------
 
 ARG TRT_VERSION
@@ -11,16 +12,15 @@ ARG CUDA_VERSION
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
+RUN v="${TRT_VERSION}" \
   && apt update -y && apt install -y \
-  libnvinfer8=${v} \
-  libnvonnxparsers8=${v} \
-  libnvparsers8=${v} \
-  libnvinfer-plugin8=${v} \
+  libnvinfer10=${v} \
+  libnvonnxparsers10=${v} \
+  libnvinfer-plugin10=${v} \
   && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------
-FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn8-devel-ubuntu${OS_VERSION} as builder
+FROM registry-1.docker.io/nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu${OS_VERSION} as builder
 # -----------------------------------------------------------------
 
 ARG TRT_VERSION
@@ -28,11 +28,10 @@ ARG CUDA_VERSION
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
+RUN v="${TRT_VERSION}" \
   && apt update -y && apt install -y \
   libnvinfer-dev=${v} \
   libnvonnxparsers-dev=${v} \
-  libnvparsers-dev=${v} \
   libnvinfer-plugin-dev=${v} \
   wget \
   git \
@@ -40,7 +39,7 @@ RUN v="${TRT_VERSION}-1+cuda${CUDA_VERSION%.*}" \
   libzip-dev \
   && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh \
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.29.2/cmake-3.29.2-linux-x86_64.sh \
   -q -O /tmp/cmake-install.sh \
   && chmod u+x /tmp/cmake-install.sh \
   && /tmp/cmake-install.sh --skip-license --prefix=/usr/local \
@@ -48,7 +47,8 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1
 
 WORKDIR /
 
-RUN git clone https://github.com/lightvector/KataGo.git && mkdir -p /KataGo/cpp/build
+ARG KATAGO_VERSION
+RUN git clone -b ${KATAGO_VERSION} https://github.com/lightvector/KataGo.git && mkdir -p /KataGo/cpp/build
 
 WORKDIR /KataGo/cpp/build
 
