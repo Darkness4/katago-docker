@@ -15,5 +15,5 @@ podman run --rm -it \
   --group-add keep-groups \
   -v "$SCRIPTPATH/default_gtp.cfg:/app/default_gtp.cfg:ro" \
   -v "$SCRIPTPATH/default_model.bin.gz:/app/default_model.bin.gz:ro" \
-  docker.io/darkness4/katago:latest \
+  ghcr.io/darkness4/katago:latest \
   $@
